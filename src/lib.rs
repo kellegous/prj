@@ -3,7 +3,7 @@ mod search;
 
 use clap::Subcommand;
 use std::error::Error;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
@@ -23,7 +23,7 @@ impl Command {
 
 #[derive(Debug)]
 pub struct ProjectDir {
-    pub path: PathBuf,
+    path: PathBuf,
 }
 
 impl ProjectDir {
@@ -33,9 +33,35 @@ impl ProjectDir {
             .join("Documents");
         Ok(ProjectDir { path: p })
     }
+
+    pub fn year_dirs(&self) -> Result<Vec<YearDir>, Box<dyn Error>> {
+        // TODO: filter out non-dirs and dirs that aren't a year
+        let dirs = std::fs::read_dir(&self.path)?
+            .map(|entry| entry.map(|entry| YearDir::new(entry.path())))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(dirs)
+    }
 }
 
 impl std::fmt::Display for ProjectDir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.path.display())
+    }
+}
+
+pub struct YearDir {
+    path: PathBuf,
+}
+
+impl YearDir {
+    pub fn new<P: AsRef<Path>>(dir: P) -> YearDir {
+        YearDir {
+            path: dir.as_ref().to_path_buf(),
+        }
+    }
+}
+
+impl std::fmt::Display for YearDir {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.path.display())
     }

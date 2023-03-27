@@ -10,5 +10,9 @@ pub struct Args {
 pub fn run(dir: &ProjectDir, args: &Args) -> Result<(), Box<dyn Error>> {
     println!("List dir={:?}, args={:?}", dir, args);
 
+    for dir in dir.year_dirs()? {
+        println!("  {}", dir);
+    }
+
     Ok(())
 }
