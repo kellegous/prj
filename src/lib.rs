@@ -4,6 +4,7 @@ mod search;
 use clap::Subcommand;
 use std::error::Error;
 use std::path::{Path, PathBuf};
+use std::{fs, path};
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
@@ -35,9 +36,11 @@ impl ProjectDir {
     }
 
     pub fn year_dirs(&self) -> Result<Vec<YearDir>, Box<dyn Error>> {
-        // TODO: filter out non-dirs and dirs that aren't a year
-        let dirs = std::fs::read_dir(&self.path)?
-            .map(|entry| entry.map(|entry| YearDir::new(entry.path())))
+        let dirs = fs::read_dir(&self.path)?
+            .flat_map(|entry| match entry {
+                Ok(entry) => YearDir::from_path(entry.path()).map(Ok),
+                Err(e) => Some(Err(e)),
+            })
             .collect::<Result<Vec<_>, _>>()?;
         Ok(dirs)
     }
@@ -57,6 +60,15 @@ impl YearDir {
     pub fn new<P: AsRef<Path>>(dir: P) -> YearDir {
         YearDir {
             path: dir.as_ref().to_path_buf(),
+        }
+    }
+
+    pub fn from_path<P: AsRef<Path>>(dir: P) -> Option<YearDir> {
+        let year = dir.as_ref().file_name()?.to_str()?.parse::<u32>().ok()?;
+        if (1900..=2500).contains(&year) {
+            Some(YearDir::new(dir))
+        } else {
+            None
         }
     }
 }
