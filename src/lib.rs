@@ -74,13 +74,6 @@ pub struct Year {
 }
 
 impl Year {
-    pub fn new(root: &ProjectDir, year: u32) -> Year {
-        Year {
-            root: root.clone(),
-            year,
-        }
-    }
-
     pub fn from_path<P: AsRef<Path>>(root: &ProjectDir, dir: P) -> Option<Year> {
         Some(Year {
             root: root.clone(),
@@ -119,13 +112,6 @@ pub struct Month {
 }
 
 impl Month {
-    fn new(year: &Year, month: u32) -> Month {
-        Month {
-            year: year.clone(),
-            month,
-        }
-    }
-
     fn from_path<P: AsRef<Path>>(year: &Year, dir: P) -> Option<Month> {
         Some(Month {
             year: year.clone(),
