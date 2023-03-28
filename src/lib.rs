@@ -3,9 +3,12 @@ mod search;
 
 use clap::Subcommand;
 use std::error::Error;
-use std::fs;
 use std::path::{Path, PathBuf};
 use std::rc::Rc;
+use std::{
+    fs::{self, DirEntry},
+    io,
+};
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
@@ -62,7 +65,7 @@ fn parse_year(s: &str) -> Option<u32> {
 
 fn parse_month(s: &str) -> Option<u32> {
     match s.parse::<u32>().ok()? {
-        m if (1..=12).contains(&m) => Some(m),
+        m if (1..=12).contains(&m) && s.len() == 2 => Some(m),
         _ => None,
     }
 }
@@ -106,6 +109,7 @@ impl std::fmt::Display for Year {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Month {
     year: Year,
     month: u32,
@@ -124,11 +128,58 @@ impl Month {
     }
 
     pub fn path(&self) -> PathBuf {
-        self.year.path().join(self.month.to_string())
+        let name = format!("{:02}", self.month);
+        self.year.path().join(name)
+    }
+
+    pub fn projects(&self) -> io::Result<Vec<Project>> {
+        let dirs = fs::read_dir(self.path())?
+            .flat_map(|entry| match entry {
+                Ok(entry) => Project::from_entry(self, &entry),
+                Err(e) => Some(Err(e)),
+            })
+            .collect::<io::Result<Vec<_>>>()?;
+        Ok(dirs)
     }
 }
 
 impl std::fmt::Display for Month {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.path().display())
+    }
+}
+
+pub struct Project {
+    month: Month,
+    name: String,
+}
+
+impl Project {
+    fn from_path<P: AsRef<Path>>(month: &Month, dir: P) -> Option<Project> {
+        Some(Project {
+            month: month.clone(),
+            name: dir.as_ref().file_name()?.to_str()?.to_string(),
+        })
+    }
+
+    fn from_entry(month: &Month, entry: &DirEntry) -> Option<io::Result<Project>> {
+        match entry.file_type() {
+            Ok(t) if t.is_dir() => Project::from_path(month, entry.path()).map(Ok),
+            Ok(_) => None,
+            Err(e) => Some(Err(e)),
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn path(&self) -> PathBuf {
+        self.month.path().join(&self.name)
+    }
+}
+
+impl std::fmt::Display for Project {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.path().display())
     }

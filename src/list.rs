@@ -11,9 +11,10 @@ pub fn run(dir: &ProjectDir, args: &Args) -> Result<(), Box<dyn Error>> {
     println!("List dir={:?}, args={:?}", dir, args);
 
     for year in dir.years()? {
-        println!("  {}", year.year());
         for month in year.months()? {
-            println!("    {:02}", month.month());
+            for project in month.projects()? {
+                println!("{}", project.path().display());
+            }
         }
     }
 
