@@ -3,15 +3,18 @@ use std::error::Error;
 
 #[derive(Debug, clap::Args)]
 pub struct Args {
-    #[clap(long)]
+    #[clap(long, short)]
     year: Option<Vec<u32>>,
 }
 
 pub fn run(dir: &ProjectDir, args: &Args) -> Result<(), Box<dyn Error>> {
     println!("List dir={:?}, args={:?}", dir, args);
 
-    for dir in dir.year_dirs()? {
-        println!("  {}", dir);
+    for year in dir.years()? {
+        println!("  {}", year.year());
+        for month in year.months()? {
+            println!("    {:02}", month.month());
+        }
     }
 
     Ok(())
